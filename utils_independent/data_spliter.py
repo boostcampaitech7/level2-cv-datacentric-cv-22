@@ -102,10 +102,10 @@ validation_filenames = set([
 
 # 데이터셋 경로 설정 및 결과 디렉토리 생성
 # ────────────────────────────────────────────────────────────────────────────────────────────────
-root = '/data/ephemeral/home'
-data_dir = root + '/code/data_original'
 
-output_dir = root + '/code/data'
+data_dir = './code/data_original'
+
+output_dir = './code/data'
 os.makedirs(output_dir, exist_ok=True)
 
 languages = ['chinese_receipt', 'japanese_receipt', 'thai_receipt', 'vietnamese_receipt']
