@@ -103,7 +103,7 @@ validation_filenames = set([
 # 데이터셋 경로 설정 및 결과 디렉토리 생성
 # ────────────────────────────────────────────────────────────────────────────────────────────────
 
-data_dir = './code/data_original'
+data_dir = 'data/ephemeral/home/code/data_original'
 
 output_dir = './code/data'
 os.makedirs(output_dir, exist_ok=True)
@@ -148,8 +148,6 @@ for lang in languages:
         if os.path.exists(src_image_path):
             shutil.copy2(src_image_path, dst_image_path)
 
-
-for lang in languages:
     val_json_path = os.path.join(output_dir, lang, 'ufo', 'validation.json')
     train_json_path = os.path.join(output_dir, lang, 'ufo', 'train.json')
 
@@ -161,6 +159,7 @@ for lang in languages:
     
     with open(val_json_path, 'w', encoding='utf-8') as f:
         json.dump(val_data[lang], f, indent=4, ensure_ascii=False)
+
 
 
 print("데이터셋 분할 완료.")
