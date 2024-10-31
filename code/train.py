@@ -119,10 +119,10 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
         
         # 검증 ───────────────────────────────────────────────────────────────────────────────────
 
-        val_loss = 0
-
         model.eval()
+
         with torch.no_grad(), tqdm(total=len(val_loader), desc=f"[Epoch {epoch + 1}] Validation", position=0) as val_pbar:
+            val_loss = 0
             pred_bboxes_dict, gt_bboxes_dict = {}, {}
 
             for batch_idx, (img, gt_score_map, gt_geo_map, roi_mask) in enumerate(val_loader):
@@ -168,12 +168,15 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
             }
             print("\npred_bboxes shape:", pred_bboxes.shape)
             print("gt_bboxes shape:", gt_bboxes.shape)
+
             metrics_result = calc_deteval_metrics(pred_bboxes_dict, gt_bboxes_dict, eval_hparams=eval_hparams)
             avg_f1_score = metrics_result['total']['hmean']
+            avg_precision = metrics_result['total']['precision']
+            avg_recall = metrics_result['total']['recall']
 
         
         avg_val_loss = val_loss / len(val_loader)
-        print('Epoch {} Validation Loss: {:.4f}, F1 Score: {:.4f}'.format(epoch + 1, avg_val_loss, avg_f1_score))
+        print(f'Epoch {epoch + 1} Validation Loss: {avg_val_loss:.4f}, Precision: {avg_precision:.4f}, Recall: {avg_recall:.4f}, F1 Score: {avg_f1_score:.4f}')
 
         model.train()
 
@@ -198,7 +201,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
 
 def main(args):
     # ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ 체크포인트 쓸 때 지정해야 할 것 ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼
-    args.checkpoint_path = '/data/ephemeral/home/repo/code/trained_models/epoch_35.pth'
+    args.checkpoint_path = '/data/ephemeral/home/repo/code/trained_models/epoch_40.pth'
 
     do_training(**args.__dict__)
 
