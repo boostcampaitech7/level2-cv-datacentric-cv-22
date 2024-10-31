@@ -2,6 +2,7 @@ import os
 import os.path as osp
 import time
 import math
+import wandb
 from datetime import timedelta
 from argparse import ArgumentParser
 
@@ -45,6 +46,19 @@ def parse_args():
 
 def do_training(data_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
                 learning_rate, max_epoch, save_interval):
+    
+    wandb.init(project="Data-Centric", entity='jhs7027-naver', name='hyungjoon',config={
+        "batch_size": batch_size,
+        "max_epoch": max_epoch,
+        "image_size": image_size,
+        "input_size": input_size,
+        "num_workers": num_workers,
+    })
+
+    # 함수 시작 부분에 현재 시간으로 폴더명 생성
+    current_time = time.strftime("%y%m%d_%H%M")
+    save_dir = osp.join(model_dir, current_time)
+    
     train_dataset = SceneTextDataset(
         data_dir,
         split='train',
@@ -78,7 +92,17 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     model = EAST()
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[max_epoch // 2], gamma=0.1)
+    milestones = [max_epoch // 2]  
+    gamma = 0.1
+    scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=gamma)
+
+    wandb.log({
+        "optimizer": optimizer.__class__.__name__,  
+        "initial_learning_rate": learning_rate,
+        "scheduler": scheduler.__class__.__name__,  
+        "milestones": milestones,  
+        "gamma": gamma  
+    })
 
     model.train()
     for epoch in range(max_epoch):
@@ -106,11 +130,14 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                 }
                 pbar.set_postfix(val_dict)
 
+                wandb.log(val_dict)
+
         scheduler.step()
 
         print('Mean loss: {:.4f} | Elapsed time: {}'.format(
             epoch_loss / num_batches, timedelta(seconds=time.time() - epoch_start)))
         
+        wandb.log({"mean_train_loss": epoch_loss / num_batches})
         
         val_loss = 0
         model.eval()
@@ -123,17 +150,30 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                 loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
                 val_loss += loss.item()
 
+                v_val_dict = {
+                            'v_Cls loss': extra_info['cls_loss'], 'v_Angle loss': extra_info['angle_loss'],
+                            'v_IoU loss': extra_info['iou_loss']
+                }
+                pbar.set_postfix(v_val_dict)
+                pbar.update(1)  
+
+                wandb.log(v_val_dict)
+
         avg_val_loss = val_loss / len(val_loader)
-        print('Epoch {} Validation Loss: {:.4f}'.format(epoch + 1, avg_val_loss))
+        print('Mean Validation Loss: {:.4f} | Elapsed time: {}'.format(
+            avg_val_loss, timedelta(seconds=time.time() - epoch_start)))
+
+        wandb.log({"mean_validation_loss": avg_val_loss})
 
         model.train()
 
         
+        # 모델 저장 부분만 수정
         if (epoch + 1) % save_interval == 0:
-            if not osp.exists(model_dir):
-                os.makedirs(model_dir)
+            if not osp.exists(save_dir):
+                os.makedirs(save_dir)
 
-            ckpt_fpath = osp.join(model_dir, f'epoch_{epoch+1}.pth')
+            ckpt_fpath = osp.join(save_dir, f'epoch_{epoch+1}.pth')
             torch.save(model.state_dict(), ckpt_fpath)
             print(f'Model checkpoint saved at {ckpt_fpath}')
 
