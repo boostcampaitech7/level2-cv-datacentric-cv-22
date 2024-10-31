@@ -4,5 +4,9 @@ __pycache__/
 /code/loss.py
 /code/model.py
 /code/data
+/code/data_stratified
 /code/pths
 /code/trained_models
+/code/predictions
+/code/wandb
+/code/eda
