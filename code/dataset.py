@@ -409,6 +409,7 @@ class SceneTextDataset(Dataset):
         image = np.array(image)
 
         funcs = []
+        transform_list = []
         if self.split == 'train':
             transform_list = [A.ColorJitter()]
         funcs = transform_list + [A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))]
