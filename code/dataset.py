@@ -11,9 +11,6 @@ from torch.utils.data import Dataset
 from shapely.geometry import Polygon
 from numba import njit
 
-def print():
-    print("Hello")
-
 
 @njit
 def cal_distance(x1, y1, x2, y2):
