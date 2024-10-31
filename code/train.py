@@ -37,7 +37,7 @@ def parse_args():
     parser.add_argument('--input_size', type=int, default=1024)
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--learning_rate', type=float, default=1e-3)
-    parser.add_argument('--max_epoch', type=int, default=85)
+    parser.add_argument('--max_epoch', type=int, default=100)
     parser.add_argument('--save_interval', type=int, default=5)
     parser.add_argument('--checkpoint_path', type=str, default=None, help="학습 재개 시 체크포인트 파일 경로 지정을 위한 인자")
     
@@ -133,6 +133,8 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                 
                 wandb.log(val_dict) 
 
+        wandb.log({"epoch": epoch + 1})  
+
         scheduler.step()
 
         print('Mean loss: {:.4f} | Elapsed time: {}'.format(
@@ -152,7 +154,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                     img, gt_score_map, gt_geo_map, roi_mask = (
                         img.to(device), gt_score_map.to(device), gt_geo_map.to(device), roi_mask.to(device)
                     )
-
+                    
                     pred_score_map, pred_geo_map = model(img)
 
                     loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
