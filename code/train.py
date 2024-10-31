@@ -2,6 +2,7 @@ import os
 import os.path as osp
 import time
 import math
+import wandb
 from datetime import timedelta
 from argparse import ArgumentParser
 
@@ -51,6 +52,15 @@ def parse_args():
 def do_training(data_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
                 learning_rate, max_epoch, save_interval, checkpoint_path=None):
     
+    # wandb 초기화 ─────────────────────────────────────────────────────────────────────────────
+    wandb.init(project="Data-Centric", entity='jhs7027-naver', group = 'jaehyo', name='jaehyo',config={
+        "batch_size": batch_size,
+        "max_epoch": max_epoch,
+        "image_size": image_size,
+        "input_size": input_size,
+        "num_workers": num_workers,
+    })
+    
     # 데이터 초기화 ──────────────────────────────────────────────────────────────────────────────
     
     train_dataset = SceneTextDataset(data_dir, split='train', image_size=image_size, crop_size=input_size,)
@@ -67,7 +77,17 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     model = EAST().to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[max_epoch // 2], gamma=0.1)
+    milestones = [max_epoch // 2]  
+    gamma = 0.1  
+    scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=gamma)
+    
+    wandb.log({
+        "optimizer": optimizer.__class__.__name__,  
+        "initial_learning_rate": learning_rate,
+        "scheduler": scheduler.__class__.__name__,  
+        "milestones": milestones,  
+        "gamma": gamma  
+    })
 
     # 체크 포인트 ────────────────────────────────────────────────────────────────────────────────
 
@@ -106,20 +126,23 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
 
                 pbar.update(1)
                 val_dict = {
-                    'Cls loss': extra_info['cls_loss'], 'Angle loss': extra_info['angle_loss'],
-                    'IoU loss': extra_info['iou_loss']
+                    't_Cls loss': extra_info['cls_loss'], 't_Angle loss': extra_info['angle_loss'],
+                    't_IoU loss': extra_info['iou_loss']
                 }
                 pbar.set_postfix(val_dict)
+                
+                wandb.log(val_dict) 
 
         scheduler.step()
 
         print('Mean loss: {:.4f} | Elapsed time: {}'.format(
             epoch_loss / num_batches, timedelta(seconds=time.time() - epoch_start)))
         
+        wandb.log({"mean_train_loss": epoch_loss / num_batches})
         
         # 검증 ───────────────────────────────────────────────────────────────────────────────────
-        #  검증 주기 설정
-        if (epoch + 1) % 2 == 0:
+
+        if (epoch + 1) % 1 == 0:
             model.eval()
             with torch.no_grad(), tqdm(total=len(val_loader), desc=f"[Epoch {epoch + 1}] Validation", position=0) as val_pbar:
                 val_loss = 0
@@ -135,6 +158,12 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                     loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
                     val_loss += loss.item()
                     
+                    v_val_dict = {
+                                'v_Cls loss': extra_info['cls_loss'], 'v_Angle loss': extra_info['angle_loss'],
+                                'v_IoU loss': extra_info['iou_loss']
+                    }
+                    
+                    wandb.log(v_val_dict)
 
                     for i in range(img.size(0)):
                         score = pred_score_map[i].cpu().numpy()
@@ -188,9 +217,12 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                 avg_precision = metrics_result['total']['precision']
                 avg_recall = metrics_result['total']['recall']
 
+            
             avg_val_loss = val_loss / len(val_loader)
             print(f'Epoch {epoch + 1} Validation Loss: {avg_val_loss:.4f}, Precision: {avg_precision:.4f}, Recall: {avg_recall:.4f}, F1 Score: {avg_f1_score:.4f}')
-        
+            
+            wandb.log({"val_loss": avg_val_loss, "precision": avg_precision, "recall": avg_recall, "f1_score": avg_f1_score})
+            
         model.train()
 
 
