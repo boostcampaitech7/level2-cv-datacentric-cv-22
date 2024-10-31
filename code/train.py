@@ -118,78 +118,79 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
         
         
         # 검증 ───────────────────────────────────────────────────────────────────────────────────
+        #  검증 주기 설정
+        if (epoch + 1) % 2 == 0:
+            model.eval()
+            with torch.no_grad(), tqdm(total=len(val_loader), desc=f"[Epoch {epoch + 1}] Validation", position=0) as val_pbar:
+                val_loss = 0
+                pred_bboxes_dict, gt_bboxes_dict = {}, {}
 
-        model.eval()
+                for batch_idx, (img, gt_score_map, gt_geo_map, roi_mask) in enumerate(val_loader):
+                    img, gt_score_map, gt_geo_map, roi_mask = (
+                        img.to(device), gt_score_map.to(device), gt_geo_map.to(device), roi_mask.to(device)
+                    )
 
-        with torch.no_grad(), tqdm(total=len(val_loader), desc=f"[Epoch {epoch + 1}] Validation", position=0) as val_pbar:
-            val_loss = 0
-            pred_bboxes_dict, gt_bboxes_dict = {}, {}
+                    pred_score_map, pred_geo_map = model(img)
 
-            for batch_idx, (img, gt_score_map, gt_geo_map, roi_mask) in enumerate(val_loader):
-                img, gt_score_map, gt_geo_map, roi_mask = (
-                    img.to(device), gt_score_map.to(device), gt_geo_map.to(device), roi_mask.to(device)
-                )
+                    loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
+                    val_loss += loss.item()
+                    
 
-                pred_score_map, pred_geo_map = model(img)
+                    for i in range(img.size(0)):
+                        score = pred_score_map[i].cpu().numpy()
+                        geo = pred_geo_map[i].cpu().numpy()
 
-                loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
-                val_loss += loss.item()
+                        gt_bboxes = extract_true_bboxes(gt_score_map[i].cpu().numpy(), gt_geo_map[i].cpu().numpy())
+                        if gt_bboxes is not None and gt_bboxes.size > 0:
+                            gt_bboxes = ensure_bbox_format(gt_bboxes)
 
-                for i in range(img.size(0)):
-                    score = pred_score_map[i].cpu().numpy()
-                    geo = pred_geo_map[i].cpu().numpy()
+                        pred_bboxes = get_bboxes(score, geo)
+                        if pred_bboxes is not None and pred_bboxes.size > 0:
+                            pred_bboxes = ensure_bbox_format(pred_bboxes)
 
-                    gt_bboxes = extract_true_bboxes(gt_score_map[i].cpu().numpy(), gt_geo_map[i].cpu().numpy())
-                    if gt_bboxes is not None and gt_bboxes.size > 0:
-                        gt_bboxes = ensure_bbox_format(gt_bboxes)
+                        img_id = f"batch_{batch_idx}_img_{i}"
 
-                    pred_bboxes = get_bboxes(score, geo)
-                    if pred_bboxes is not None and pred_bboxes.size > 0:
-                        pred_bboxes = ensure_bbox_format(pred_bboxes)
+                        if pred_bboxes is not None and pred_bboxes.size > 0:
+                            pred_bboxes_dict[img_id] = pred_bboxes
 
-                    img_id = f"batch_{batch_idx}_img_{i}"
+                        if gt_bboxes is not None and gt_bboxes.size > 0:
+                            gt_bboxes_dict[img_id] = gt_bboxes
 
-                    if pred_bboxes is not None and pred_bboxes.size > 0:
-                        pred_bboxes_dict[img_id] = pred_bboxes
-
-                    if gt_bboxes is not None and gt_bboxes.size > 0:
-                        gt_bboxes_dict[img_id] = gt_bboxes
-                        
-                    if pred_bboxes is None: 
+                        if pred_bboxes is None: 
                             continue
-                        
-                    val_pbar.update(1)
 
-            # 평가 지표 계산
-            eval_hparams = {
-                'AREA_RECALL_CONSTRAINT': 0.8,
-                'AREA_PRECISION_CONSTRAINT': 0.4,
-                'EV_PARAM_IND_CENTER_DIFF_THR': 0.5,
-                'MTYPE_OO_O': 1.0,
-                'MTYPE_OM_O': 0.5,
-                'MTYPE_OM_M': 0.5
-            }
-            
-            # pred_bboxes가 None인지 확인
-            if pred_bboxes is not None:
+
+                        val_pbar.update(1)
+
+                # 평가 지표 계산
+                eval_hparams = {
+                    'AREA_RECALL_CONSTRAINT': 0.8,
+                    'AREA_PRECISION_CONSTRAINT': 0.4,
+                    'EV_PARAM_IND_CENTER_DIFF_THR': 0.5,
+                    'MTYPE_OO_O': 1.0,
+                    'MTYPE_OM_O': 0.5,
+                    'MTYPE_OM_M': 0.5
+                }
+                
+                # pred_bboxes가 None인지 확인
+                if pred_bboxes is not None:
                     print("\npred_bboxes shape:", pred_bboxes.shape)
-            else:
+                else:
                     print("\npred_bboxes is None")
                 
-            if gt_bboxes is not None:
+                if gt_bboxes is not None:
                     print("gt_bboxes shape:", gt_bboxes.shape)
-            else:
+                else:
                     print("gt_bboxes is None")
 
-            metrics_result = calc_deteval_metrics(pred_bboxes_dict, gt_bboxes_dict, eval_hparams=eval_hparams)
-            avg_f1_score = metrics_result['total']['hmean']
-            avg_precision = metrics_result['total']['precision']
-            avg_recall = metrics_result['total']['recall']
+                metrics_result = calc_deteval_metrics(pred_bboxes_dict, gt_bboxes_dict, eval_hparams=eval_hparams)
+                avg_f1_score = metrics_result['total']['hmean']
+                avg_precision = metrics_result['total']['precision']
+                avg_recall = metrics_result['total']['recall']
 
+            avg_val_loss = val_loss / len(val_loader)
+            print(f'Epoch {epoch + 1} Validation Loss: {avg_val_loss:.4f}, Precision: {avg_precision:.4f}, Recall: {avg_recall:.4f}, F1 Score: {avg_f1_score:.4f}')
         
-        avg_val_loss = val_loss / len(val_loader)
-        print(f'Epoch {epoch + 1} Validation Loss: {avg_val_loss:.4f}, Precision: {avg_precision:.4f}, Recall: {avg_recall:.4f}, F1 Score: {avg_f1_score:.4f}')
-
         model.train()
 
 
