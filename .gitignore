@@ -4,3 +4,4 @@ __pycache__/
 /code/loss.py
 /code/model.py
 /code/data
+code/pths
