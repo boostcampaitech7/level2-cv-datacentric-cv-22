@@ -16,6 +16,10 @@ from dataset import SceneTextDataset
 from model import EAST
 
 
+from detect import get_bboxes
+from validate_bbox import ensure_bbox_format, extract_true_bboxes
+from deteval import calc_deteval_metrics
+
 def parse_args():
     parser = ArgumentParser()
 
@@ -32,7 +36,7 @@ def parse_args():
     parser.add_argument('--input_size', type=int, default=1024)
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--learning_rate', type=float, default=1e-3)
-    parser.add_argument('--max_epoch', type=int, default=150)
+    parser.add_argument('--max_epoch', type=int, default=85)
     parser.add_argument('--save_interval', type=int, default=5)
     parser.add_argument('--checkpoint_path', type=str, default=None, help="학습 재개 시 체크포인트 파일 경로 지정을 위한 인자")
     
@@ -118,21 +122,62 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
         val_loss = 0
 
         model.eval()
-        with torch.no_grad():
-            for img, gt_score_map, gt_geo_map, roi_mask in val_loader:
+        with torch.no_grad(), tqdm(total=len(val_loader), desc=f"[Epoch {epoch + 1}] Validation", position=0) as val_pbar:
+            pred_bboxes_dict, gt_bboxes_dict = {}, {}
+
+            for batch_idx, (img, gt_score_map, gt_geo_map, roi_mask) in enumerate(val_loader):
                 img, gt_score_map, gt_geo_map, roi_mask = (
                     img.to(device), gt_score_map.to(device), gt_geo_map.to(device), roi_mask.to(device)
                 )
 
+                pred_score_map, pred_geo_map = model(img)
+
                 loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
                 val_loss += loss.item()
 
+                for i in range(img.size(0)):
+                    score = pred_score_map[i].cpu().numpy()
+                    geo = pred_geo_map[i].cpu().numpy()
+
+                    gt_bboxes = extract_true_bboxes(gt_score_map[i].cpu().numpy(), gt_geo_map[i].cpu().numpy())
+                    if gt_bboxes is not None and gt_bboxes.size > 0:
+                        gt_bboxes = ensure_bbox_format(gt_bboxes)
+
+                    pred_bboxes = get_bboxes(score, geo)
+                    if pred_bboxes is not None and pred_bboxes.size > 0:
+                        pred_bboxes = ensure_bbox_format(pred_bboxes)
+
+                    img_id = f"batch_{batch_idx}_img_{i}"
+
+                    if pred_bboxes is not None and pred_bboxes.size > 0:
+                        pred_bboxes_dict[img_id] = pred_bboxes
+
+                    if gt_bboxes is not None and gt_bboxes.size > 0:
+                        gt_bboxes_dict[img_id] = gt_bboxes
+
+                    val_pbar.update(1)
+
+            # 평가 지표 계산
+            eval_hparams = {
+                'AREA_RECALL_CONSTRAINT': 0.8,
+                'AREA_PRECISION_CONSTRAINT': 0.4,
+                'EV_PARAM_IND_CENTER_DIFF_THR': 0.5,
+                'MTYPE_OO_O': 1.0,
+                'MTYPE_OM_O': 0.5,
+                'MTYPE_OM_M': 0.5
+            }
+            print("\npred_bboxes shape:", pred_bboxes.shape)
+            print("gt_bboxes shape:", gt_bboxes.shape)
+            metrics_result = calc_deteval_metrics(pred_bboxes_dict, gt_bboxes_dict, eval_hparams=eval_hparams)
+            avg_f1_score = metrics_result['total']['hmean']
+
+        
         avg_val_loss = val_loss / len(val_loader)
-        print('Epoch {} Validation Loss: {:.4f}'.format(epoch + 1, avg_val_loss))
+        print('Epoch {} Validation Loss: {:.4f}, F1 Score: {:.4f}'.format(epoch + 1, avg_val_loss, avg_f1_score))
 
         model.train()
 
-        
+
         if (epoch + 1) % save_interval == 0:
             if not osp.exists(model_dir):
                 os.makedirs(model_dir)
