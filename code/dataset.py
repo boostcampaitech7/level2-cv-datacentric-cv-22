@@ -344,9 +344,7 @@ class SceneTextDataset(Dataset):
                  image_size=2048,
                  crop_size=1024,
                  ignore_under_threshold=10,
-                 drop_under_threshold=1,
-                 color_jitter=True,
-                 normalize=True):
+                 drop_under_threshold=1):
         self._lang_list = ['chinese', 'japanese', 'thai', 'vietnamese']
         self.root_dir = root_dir
         self.split = split
@@ -361,7 +359,6 @@ class SceneTextDataset(Dataset):
         self.image_fnames = sorted(self.anno['images'].keys())
 
         self.image_size, self.crop_size = image_size, crop_size
-        self.color_jitter, self.normalize = color_jitter, normalize
 
         self.drop_under_threshold = drop_under_threshold
         self.ignore_under_threshold = ignore_under_threshold
@@ -403,20 +400,21 @@ class SceneTextDataset(Dataset):
         )
 
         image = Image.open(image_fpath)
-        image, vertices = resize_img(image, vertices, self.image_size)
-        image, vertices = adjust_height(image, vertices)
-        image, vertices = rotate_img(image, vertices)
-        image, vertices = crop_img(image, vertices, labels, self.crop_size)
+        image, vertices = resize_img(image, vertices, self.image_size)       
+        # validation에는 적용 안 함
+        if self.split == 'train':
+            image, vertices = adjust_height(image, vertices)
+            image, vertices = rotate_img(image, vertices)
+            image, vertices = crop_img(image, vertices, labels, self.crop_size)
 
         if image.mode != 'RGB':
             image = image.convert('RGB')
         image = np.array(image)
 
         funcs = []
-        if self.color_jitter:
-            funcs.append(A.ColorJitter())
-        if self.normalize:
-            funcs.append(A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)))
+        if self.split == 'train':
+            transform_list = [A.ColorJitter()]
+        funcs = transform_list + [A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))]
         transform = A.Compose(funcs)
 
         image = transform(image=image)['image']
