@@ -154,7 +154,10 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
 
                     if gt_bboxes is not None and gt_bboxes.size > 0:
                         gt_bboxes_dict[img_id] = gt_bboxes
-
+                        
+                    if pred_bboxes is None: 
+                            continue
+                        
                     val_pbar.update(1)
 
             # 평가 지표 계산
@@ -166,8 +169,17 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                 'MTYPE_OM_O': 0.5,
                 'MTYPE_OM_M': 0.5
             }
-            print("\npred_bboxes shape:", pred_bboxes.shape)
-            print("gt_bboxes shape:", gt_bboxes.shape)
+            
+            # pred_bboxes가 None인지 확인
+            if pred_bboxes is not None:
+                    print("\npred_bboxes shape:", pred_bboxes.shape)
+            else:
+                    print("\npred_bboxes is None")
+                
+            if gt_bboxes is not None:
+                    print("gt_bboxes shape:", gt_bboxes.shape)
+            else:
+                    print("gt_bboxes is None")
 
             metrics_result = calc_deteval_metrics(pred_bboxes_dict, gt_bboxes_dict, eval_hparams=eval_hparams)
             avg_f1_score = metrics_result['total']['hmean']
@@ -201,7 +213,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
 
 def main(args):
     # ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ 체크포인트 쓸 때 지정해야 할 것 ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼ ▼
-    args.checkpoint_path = '/data/ephemeral/home/repo/code/trained_models/epoch_40.pth'
+    #args.checkpoint_path = '/data/ephemeral/home/repo/code/trained_models/epoch_40.pth'
 
     do_training(**args.__dict__)
 
@@ -209,63 +221,3 @@ def main(args):
 if __name__ == '__main__':
     args = parse_args()
     main(args)
-
-
-
-# 원래 train 코드
-# def do_training(data_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
-#                 learning_rate, max_epoch, save_interval):
-#     dataset = SceneTextDataset(
-#         data_dir,
-#         split='train',
-#         image_size=image_size,
-#         crop_size=input_size,
-#     )
-#     dataset = EASTDataset(dataset)
-#     num_batches = math.ceil(len(dataset) / batch_size)
-#     train_loader = DataLoader(
-#         dataset,
-#         batch_size=batch_size,
-#         shuffle=True,
-#         num_workers=num_workers
-#     )
-
-#     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-#     model = EAST()
-#     model.to(device)
-#     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-#     scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[max_epoch // 2], gamma=0.1)
-
-#     model.train()
-#     for epoch in range(max_epoch):
-#         epoch_loss, epoch_start = 0, time.time()
-#         with tqdm(total=num_batches) as pbar:
-#             for img, gt_score_map, gt_geo_map, roi_mask in train_loader:
-#                 pbar.set_description('[Epoch {}]'.format(epoch + 1))
-
-#                 loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
-#                 optimizer.zero_grad()
-#                 loss.backward()
-#                 optimizer.step()
-
-#                 loss_val = loss.item()
-#                 epoch_loss += loss_val
-
-#                 pbar.update(1)
-#                 val_dict = {
-#                     'Cls loss': extra_info['cls_loss'], 'Angle loss': extra_info['angle_loss'],
-#                     'IoU loss': extra_info['iou_loss']
-#                 }
-#                 pbar.set_postfix(val_dict)
-
-#         scheduler.step()
-
-#         print('Mean loss: {:.4f} | Elapsed time: {}'.format(
-#             epoch_loss / num_batches, timedelta(seconds=time.time() - epoch_start)))
-
-#         if (epoch + 1) % save_interval == 0:
-#             if not osp.exists(model_dir):
-#                 os.makedirs(model_dir)
-
-#             ckpt_fpath = osp.join(model_dir, 'latest.pth')
-#             torch.save(model.state_dict(), ckpt_fpath)
