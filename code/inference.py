@@ -74,7 +74,7 @@ def do_inference(model, ckpt_fpath, data_dir, input_size, batch_size, split='tes
 
 def main(args):
     model = EAST(pretrained=False).to(args.device)
-    ckpt_fpath = osp.join(args.model_dir, 'latest.pth')
+    ckpt_fpath = osp.join(args.model_dir, 'epoch_85.pth')
 
     if not osp.exists(args.output_dir):
         os.makedirs(args.output_dir)
