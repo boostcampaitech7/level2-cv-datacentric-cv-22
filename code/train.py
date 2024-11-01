@@ -17,10 +17,22 @@ from east_dataset import EASTDataset
 from dataset import SceneTextDataset
 from model import EAST
 
-
+import numpy as np
+import random
 from detect import get_bboxes
 from validate_bbox import ensure_bbox_format, extract_true_bboxes
 from deteval import calc_deteval_metrics
+
+
+def set_seed(seed=22):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
 
 def parse_args():
     parser = ArgumentParser()
@@ -51,8 +63,10 @@ def parse_args():
 
 
 def do_training(data_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
-                learning_rate, max_epoch, save_interval, checkpoint_path=None):
+                learning_rate, max_epoch, save_interval, checkpoint_path=None, seed=22):
     
+    set_seed()
+
     # wandb 초기화 ─────────────────────────────────────────────────────────────────────────────
     wandb.init(project="Data-Centric", entity='jhs7027-naver', group = 'jaehyo', name='jaehyo',config={
         "batch_size": batch_size,
@@ -103,13 +117,8 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
 
         start_epoch = checkpoint['epoch']
 
-    model.train()
 
-    # 랜덤 시드 고정 ───────────────────────────────────────────────────────────────────────────
-    random.seed(42)
-    torch.manual_seed(42)
-    if cuda.is_available():
-        torch.cuda.manual_seed_all(42)
+    model.train()
 
     for epoch in range(start_epoch, max_epoch):
         # 학습 ───────────────────────────────────────────────────────────────────────────────────
@@ -197,18 +206,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                         if pred_bboxes is None: 
                             continue
 
-
                         val_pbar.update(1)
-
-                # 평가 지표 계산
-                eval_hparams = {
-                    'AREA_RECALL_CONSTRAINT': 0.8,
-                    'AREA_PRECISION_CONSTRAINT': 0.4,
-                    'EV_PARAM_IND_CENTER_DIFF_THR': 0.5,
-                    'MTYPE_OO_O': 1.0,
-                    'MTYPE_OM_O': 0.5,
-                    'MTYPE_OM_M': 0.5
-                }
                 
                 # pred_bboxes가 None인지 확인
                 if pred_bboxes is not None:
@@ -220,8 +218,9 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                     print("gt_bboxes shape:", gt_bboxes.shape)
                 else:
                     print("gt_bboxes is None")
+                    
 
-                metrics_result = calc_deteval_metrics(pred_bboxes_dict, gt_bboxes_dict, eval_hparams=eval_hparams)
+                metrics_result = calc_deteval_metrics(pred_bboxes_dict, gt_bboxes_dict,)
                 avg_f1_score = metrics_result['total']['hmean']
                 avg_precision = metrics_result['total']['precision']
                 avg_recall = metrics_result['total']['recall']
