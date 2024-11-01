@@ -17,10 +17,22 @@ from east_dataset import EASTDataset
 from dataset import SceneTextDataset
 from model import EAST
 
-
+import numpy as np
+import random
 from detect import get_bboxes
 from validate_bbox import ensure_bbox_format, extract_true_bboxes
 from deteval import calc_deteval_metrics
+
+
+def set_seed(seed=22):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
 
 def parse_args():
     parser = ArgumentParser()
@@ -51,7 +63,7 @@ def parse_args():
 
 
 def do_training(data_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
-                learning_rate, max_epoch, save_interval, checkpoint_path=None):
+                learning_rate, max_epoch, save_interval, checkpoint_path=None, seed=22):
     
     # wandb 초기화 ─────────────────────────────────────────────────────────────────────────────
     wandb.init(project="Data-Centric", entity='jhs7027-naver', group = 'jaehyo', name='jaehyo',config={
@@ -177,7 +189,13 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                     for i in range(img.size(0)):
                         score = pred_score_map[i].cpu().numpy()
                         geo = pred_geo_map[i].cpu().numpy()
+                    for i in range(img.size(0)):
+                        score = pred_score_map[i].cpu().numpy()
+                        geo = pred_geo_map[i].cpu().numpy()
 
+                        gt_bboxes = extract_true_bboxes(gt_score_map[i].cpu().numpy(), gt_geo_map[i].cpu().numpy())
+                        if gt_bboxes is not None and gt_bboxes.size > 0:
+                            gt_bboxes = ensure_bbox_format(gt_bboxes)
                         gt_bboxes = extract_true_bboxes(gt_score_map[i].cpu().numpy(), gt_geo_map[i].cpu().numpy())
                         if gt_bboxes is not None and gt_bboxes.size > 0:
                             gt_bboxes = ensure_bbox_format(gt_bboxes)
@@ -185,9 +203,15 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                         pred_bboxes = get_bboxes(score, geo)
                         if pred_bboxes is not None and pred_bboxes.size > 0:
                             pred_bboxes = ensure_bbox_format(pred_bboxes)
+                        pred_bboxes = get_bboxes(score, geo)
+                        if pred_bboxes is not None and pred_bboxes.size > 0:
+                            pred_bboxes = ensure_bbox_format(pred_bboxes)
 
                         img_id = f"batch_{batch_idx}_img_{i}"
+                        img_id = f"batch_{batch_idx}_img_{i}"
 
+                        if pred_bboxes is not None and pred_bboxes.size > 0:
+                            pred_bboxes_dict[img_id] = pred_bboxes
                         if pred_bboxes is not None and pred_bboxes.size > 0:
                             pred_bboxes_dict[img_id] = pred_bboxes
 
@@ -198,6 +222,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                             continue
 
 
+                        val_pbar.update(1)
                         val_pbar.update(1)
 
                 # 평가 지표 계산
@@ -221,6 +246,10 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                 else:
                     print("gt_bboxes is None")
 
+                metrics_result = calc_deteval_metrics(pred_bboxes_dict, gt_bboxes_dict, eval_hparams=eval_hparams)
+                avg_f1_score = metrics_result['total']['hmean']
+                avg_precision = metrics_result['total']['precision']
+                avg_recall = metrics_result['total']['recall']
                 metrics_result = calc_deteval_metrics(pred_bboxes_dict, gt_bboxes_dict, eval_hparams=eval_hparams)
                 avg_f1_score = metrics_result['total']['hmean']
                 avg_precision = metrics_result['total']['precision']
