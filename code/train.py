@@ -65,6 +65,8 @@ def parse_args():
 def do_training(data_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
                 learning_rate, max_epoch, save_interval, checkpoint_path=None, seed=22):
     
+    set_seed()
+
     # wandb 초기화 ─────────────────────────────────────────────────────────────────────────────
     wandb.init(project="Data-Centric", entity='jhs7027-naver', group = 'jaehyo', name='jaehyo',config={
         "batch_size": batch_size,
@@ -115,13 +117,8 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
 
         start_epoch = checkpoint['epoch']
 
-    model.train()
 
-    # 랜덤 시드 고정 ───────────────────────────────────────────────────────────────────────────
-    random.seed(42)
-    torch.manual_seed(42)
-    if cuda.is_available():
-        torch.cuda.manual_seed_all(42)
+    model.train()
 
     for epoch in range(start_epoch, max_epoch):
         # 학습 ───────────────────────────────────────────────────────────────────────────────────
@@ -189,13 +186,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                     for i in range(img.size(0)):
                         score = pred_score_map[i].cpu().numpy()
                         geo = pred_geo_map[i].cpu().numpy()
-                    for i in range(img.size(0)):
-                        score = pred_score_map[i].cpu().numpy()
-                        geo = pred_geo_map[i].cpu().numpy()
 
-                        gt_bboxes = extract_true_bboxes(gt_score_map[i].cpu().numpy(), gt_geo_map[i].cpu().numpy())
-                        if gt_bboxes is not None and gt_bboxes.size > 0:
-                            gt_bboxes = ensure_bbox_format(gt_bboxes)
                         gt_bboxes = extract_true_bboxes(gt_score_map[i].cpu().numpy(), gt_geo_map[i].cpu().numpy())
                         if gt_bboxes is not None and gt_bboxes.size > 0:
                             gt_bboxes = ensure_bbox_format(gt_bboxes)
@@ -203,15 +194,9 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                         pred_bboxes = get_bboxes(score, geo)
                         if pred_bboxes is not None and pred_bboxes.size > 0:
                             pred_bboxes = ensure_bbox_format(pred_bboxes)
-                        pred_bboxes = get_bboxes(score, geo)
-                        if pred_bboxes is not None and pred_bboxes.size > 0:
-                            pred_bboxes = ensure_bbox_format(pred_bboxes)
 
                         img_id = f"batch_{batch_idx}_img_{i}"
-                        img_id = f"batch_{batch_idx}_img_{i}"
 
-                        if pred_bboxes is not None and pred_bboxes.size > 0:
-                            pred_bboxes_dict[img_id] = pred_bboxes
                         if pred_bboxes is not None and pred_bboxes.size > 0:
                             pred_bboxes_dict[img_id] = pred_bboxes
 
@@ -221,19 +206,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                         if pred_bboxes is None: 
                             continue
 
-
                         val_pbar.update(1)
-                        val_pbar.update(1)
-
-                # 평가 지표 계산
-                eval_hparams = {
-                    'AREA_RECALL_CONSTRAINT': 0.8,
-                    'AREA_PRECISION_CONSTRAINT': 0.4,
-                    'EV_PARAM_IND_CENTER_DIFF_THR': 0.5,
-                    'MTYPE_OO_O': 1.0,
-                    'MTYPE_OM_O': 0.5,
-                    'MTYPE_OM_M': 0.5
-                }
                 
                 # pred_bboxes가 None인지 확인
                 if pred_bboxes is not None:
@@ -245,12 +218,9 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                     print("gt_bboxes shape:", gt_bboxes.shape)
                 else:
                     print("gt_bboxes is None")
+                    
 
-                metrics_result = calc_deteval_metrics(pred_bboxes_dict, gt_bboxes_dict, eval_hparams=eval_hparams)
-                avg_f1_score = metrics_result['total']['hmean']
-                avg_precision = metrics_result['total']['precision']
-                avg_recall = metrics_result['total']['recall']
-                metrics_result = calc_deteval_metrics(pred_bboxes_dict, gt_bboxes_dict, eval_hparams=eval_hparams)
+                metrics_result = calc_deteval_metrics(pred_bboxes_dict, gt_bboxes_dict,)
                 avg_f1_score = metrics_result['total']['hmean']
                 avg_precision = metrics_result['total']['precision']
                 avg_recall = metrics_result['total']['recall']
