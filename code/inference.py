@@ -13,10 +13,6 @@ from tqdm import tqdm
 from detect import detect
 
 
-def print_fake():
-    print("Hello")
-
-
 CHECKPOINT_EXTENSIONS = ['.pth', '.ckpt']
 LANGUAGE_LIST = ['chinese', 'japanese', 'thai', 'vietnamese']
 
