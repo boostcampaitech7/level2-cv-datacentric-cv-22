@@ -21,6 +21,11 @@ def ufo_to_labelme(ufo_json_path, output_dir):
             transcription = word_data["transcription"]
             points = word_data["points"]
             
+            # transcription = null인 경우 처리
+            # 데이터 값을 보니 무엇인지 모르는 문자들은 null 처리함
+            if transcription == None:
+                transcription = "unknown"
+
             # LabelMe의 shape
             shape = {
                 "label": transcription,
