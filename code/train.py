@@ -5,6 +5,7 @@ import math
 import wandb
 from datetime import timedelta
 from argparse import ArgumentParser
+import random
 
 import torch
 from torch import cuda
@@ -46,7 +47,7 @@ def parse_args():
     if args.input_size % 32 != 0:
         raise ValueError('`input_size` must be a multiple of 32')
 
-    return args
+    return args 
 
 
 def do_training(data_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
@@ -103,6 +104,12 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
         start_epoch = checkpoint['epoch']
 
     model.train()
+
+    # 랜덤 시드 고정 ───────────────────────────────────────────────────────────────────────────
+    random.seed(42)
+    torch.manual_seed(42)
+    if cuda.is_available():
+        torch.cuda.manual_seed_all(42)
 
     for epoch in range(start_epoch, max_epoch):
         # 학습 ───────────────────────────────────────────────────────────────────────────────────
