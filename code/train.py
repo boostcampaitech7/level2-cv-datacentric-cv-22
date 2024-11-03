@@ -49,7 +49,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     
     # 데이터 초기화 ──────────────────────────────────────────────────────────────────────────────
     
-    train_dataset = SceneTextDataset(data_dir, split='train', image_size=image_size, crop_size=input_size,)
+    train_dataset = SceneTextDataset(data_dir, split='train_remove', image_size=image_size, crop_size=input_size,)
     train_dataset = EASTDataset(train_dataset)
 
     num_batches = math.ceil(len(train_dataset) / batch_size)
@@ -81,7 +81,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     model.train()
 
     for epoch in range(start_epoch, max_epoch):
-        # 학습 ───────────────────────────────────────────────────────────────────────────────────
+        # 학습 ───────────────────────���───────────────────────────────────────────────────────────
         epoch_loss, epoch_start = 0, time.time()
 
         with tqdm(total=num_batches) as pbar:
@@ -148,7 +148,6 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
             }, ckpt_fpath)
             
             print(f'Model checkpoint saved at {ckpt_fpath}')
-
 
 
 def main(args):

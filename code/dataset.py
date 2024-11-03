@@ -409,7 +409,7 @@ class SceneTextDataset(Dataset):
         image = np.array(image)
 
         funcs = []
-        if self.split == 'train':
+        if self.split == 'train' or 'train_remove':
             transform_list = [A.ColorJitter()]
         funcs = transform_list + [A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))]
         transform = A.Compose(funcs)
