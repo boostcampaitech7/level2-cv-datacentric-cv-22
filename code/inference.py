@@ -13,7 +13,6 @@ from tqdm import tqdm
 
 from detect import detect
 
-
 CHECKPOINT_EXTENSIONS = ['.pth', '.ckpt']
 LANGUAGE_LIST = ['chinese', 'japanese', 'thai', 'vietnamese']
 
@@ -48,14 +47,17 @@ def parse_args():
 
     return args
 
+# use_val : val 사용 여부에 따라 체크포인트 로드 방식 결정
+def do_inference(model, ckpt_fpath, data_dir, input_size, batch_size, split='test', use_val=True):
+    if use_val:
+        # val 사용 했을 경우
+        checkpoint = torch.load(ckpt_fpath, map_location="cuda")
+        model_state_dict = {k: v for k, v in checkpoint['model_state_dict'].items() if k in model.state_dict()}
+        model.load_state_dict(model_state_dict, strict=False)
+    else:
+        # val 사용 안 한 경우
+        model.load_state_dict(torch.load(ckpt_fpath, map_location='cuda'), strict=False)
 
-def do_inference(model, ckpt_fpath, data_dir, input_size, batch_size, split='test'):
-    model.load_state_dict(torch.load(ckpt_fpath, map_location='cuda'), strict=False)
-    #checkpoint = torch.load(ckpt_fpath, map_location="cuda")
-
-    #model_state_dict = {k: v for k, v in checkpoint['model_state_dict'].items() if k in model.state_dict()}
-    #model.load_state_dict(model_state_dict, strict=False)
-    
     model.eval()
 
     image_fnames, by_sample_bboxes = [], []
@@ -110,7 +112,6 @@ def main(args):
         
         visualize_script = '../utils_independent/test_visualize.py'
         subprocess.run(['python', visualize_script, '--csv_name', args.output_name])
-
 
 if __name__ == '__main__':
     args = parse_args()
