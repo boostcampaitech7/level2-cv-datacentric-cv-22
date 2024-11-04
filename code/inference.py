@@ -20,16 +20,16 @@ def parse_args():
     parser = ArgumentParser()
 
     # Conventional args
-    parser.add_argument('--data_dir', default=os.environ.get('SM_CHANNEL_EVAL', 'data'))
+    parser.add_argument('--data_dir', default=os.environ.get('SM_CHANNEL_EVAL', 'data_fixed_bbox'))
     parser.add_argument('--model_dir', default=os.environ.get('SM_CHANNEL_MODEL', 'trained_models'))
     parser.add_argument('--output_dir', default=os.environ.get('SM_OUTPUT_DATA_DIR', 'predictions'))
 
     # 체크포인트 폴더명과 에포크 번호를 입력받는 인자 추가
-    parser.add_argument('--checkpoint_folder', type=str, required=True,
+    parser.add_argument('--checkpoint_folder', type=str, default='trained_models',
                        help='Name of the checkpoint folder (e.g., 20240321_1430)')
-    parser.add_argument('--epoch_num', type=int, required=True,
+    parser.add_argument('--epoch_num', type=int, default=85,
                        help='Epoch number of the checkpoint to load')
-    parser.add_argument('--output_name', type=str, required=True,
+    parser.add_argument('--output_name', type=str, default='output',
                        help='Name of the experiment for the output file')
     
     # visualization 옵션 추가
@@ -47,8 +47,10 @@ def parse_args():
 
     return args
 
+
 # use_val : val 사용 여부에 따라 체크포인트 로드 방식 결정
-def do_inference(model, ckpt_fpath, data_dir, input_size, batch_size, split='test', use_val=True):
+def do_inference(model, ckpt_fpath, data_dir, input_size, batch_size, split='test', use_val=False, model_dir='trained_models', ouput_dir='predictions'):
+    
     if use_val:
         # val 사용 했을 경우
         checkpoint = torch.load(ckpt_fpath, map_location="cuda")
@@ -84,8 +86,9 @@ def do_inference(model, ckpt_fpath, data_dir, input_size, batch_size, split='tes
 
 
 def main(args):
+
     model = EAST(pretrained=False).to(args.device)
-    ckpt_fpath = osp.join(args.model_dir, args.checkpoint_folder, f'epoch_{args.epoch_num}.pth')
+    ckpt_fpath = osp.join(args.checkpoint_folder, f'epoch_{args.epoch_num}.pth')
 
     if not osp.exists(ckpt_fpath):
         raise FileNotFoundError(f'Checkpoint not found at: {ckpt_fpath}')
@@ -101,17 +104,18 @@ def main(args):
     ufo_result['images'].update(split_result['images'])
 
     # output 파일 이름 수정
-    output_fname = f'{args.exp_name}.csv'
+    output_fname = f'{args.output_name}.csv'
     
     with open(osp.join(args.output_dir, output_fname), 'w') as f:
         json.dump(ufo_result, f, indent=4)
 
     # Visualization 실행
-    if args.visualization:
+    if args.visualize:
         print('\nStarting visualization...')
         
         visualize_script = '../utils_independent/test_visualize.py'
         subprocess.run(['python', visualize_script, '--csv_name', args.output_name])
+
 
 if __name__ == '__main__':
     args = parse_args()
