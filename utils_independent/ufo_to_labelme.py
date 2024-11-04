@@ -8,7 +8,7 @@ def ufo_to_labelme(ufo_json_path, output_dir):
     # UFO 포맷을 LabelMe 포맷으로 전환
     for image_filename, image_data in ufo_data['images'].items():
         labelme_data = {
-            "version": "4.5.6",
+            "version": "5.0.3",
             "flags": {},
             "shapes": [],
             "imagePath": image_filename,
