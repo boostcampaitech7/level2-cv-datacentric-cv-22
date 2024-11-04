@@ -82,7 +82,7 @@ def do_training(data_dir, data_val_dir, model_dir, device, image_size, input_siz
     
     # 데이터 초기화 ──────────────────────────────────────────────────────────────────────────────
     
-    train_dataset = SceneTextDataset(data_dir, split='train_remove', image_size=image_size, crop_size=input_size,)
+    train_dataset = SceneTextDataset(data_dir, split='train', image_size=image_size, crop_size=input_size,)
     train_dataset = EASTDataset(train_dataset)
 
     num_batches = math.ceil(len(train_dataset) / batch_size)
