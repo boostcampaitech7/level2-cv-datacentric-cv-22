@@ -2,10 +2,8 @@ import os
 import os.path as osp
 import time
 import math
-import wandb
 from datetime import timedelta
 from argparse import ArgumentParser
-import random
 
 import torch
 from torch import cuda
@@ -17,6 +15,9 @@ from east_dataset import EASTDataset
 from dataset import SceneTextDataset
 from model import EAST
 
+# 추가한 라이브러리
+import wandb
+import random
 import numpy as np
 import random
 from detect import get_bboxes
@@ -64,12 +65,16 @@ def parse_args():
 
 
 def do_training(data_dir, data_val_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
-                learning_rate, max_epoch, save_interval, checkpoint_path=None, validate=False, seed=22):
+                learning_rate, max_epoch, save_interval, checkpoint_path=None, validate=False):
 
+
+    current_time = time.strftime('%Y%m%d_%H%M')
+    save_dir = osp.join(model_dir, current_time)
+    
     set_seed()
 
     # wandb 초기화 ─────────────────────────────────────────────────────────────────────────────
-    wandb.init(project="Data-Centric", entity='jhs7027-naver', group = 'jaehyo', name='jaehyo',config={
+    wandb.init(project="Data-Centric", entity='jhs7027-naver', group = 'hyungjoon', name='hyungjoon',config={
         "batch_size": batch_size,
         "max_epoch": max_epoch,
         "image_size": image_size,
@@ -154,6 +159,7 @@ def do_training(data_dir, data_val_dir, model_dir, device, image_size, input_siz
 
         wandb.log({"epoch": epoch + 1})  
 
+
         scheduler.step()
 
         print('Mean loss: {:.4f} | Elapsed time: {}'.format(
@@ -237,8 +243,8 @@ def do_training(data_dir, data_val_dir, model_dir, device, image_size, input_siz
 
         
         if (epoch + 1) % save_interval == 0:
-            if not osp.exists(model_dir):
-                os.makedirs(model_dir)
+            if not osp.exists(save_dir):
+                os.makedirs(save_dir)
 
             ckpt_fpath = osp.join(model_dir, f'epoch_{epoch+1}.pth')
           
@@ -252,7 +258,7 @@ def do_training(data_dir, data_val_dir, model_dir, device, image_size, input_siz
                 }, ckpt_fpath)
             else:   # validate가 False일 경우 model_state_dict만 저장
                 torch.save(model.state_dict(), ckpt_fpath)
-                
+
             print(f'Model checkpoint saved at {ckpt_fpath}')
 
 def main(args):
