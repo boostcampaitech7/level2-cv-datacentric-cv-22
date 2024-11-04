@@ -113,7 +113,6 @@ def main(args):
         visualize_script = '../utils_independent/test_visualize.py'
         subprocess.run(['python', visualize_script, '--csv_name', args.output_name])
 
-
 if __name__ == '__main__':
     args = parse_args()
     main(args)
