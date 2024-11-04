@@ -11,3 +11,4 @@ __pycache__/
 /code/wandb
 /code/eda
 /code/data_fixed_bbox
+augmented_images/
