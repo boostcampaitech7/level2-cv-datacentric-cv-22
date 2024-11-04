@@ -1,6 +1,7 @@
 import os
 import os.path as osp
 import time
+from datetime import datetime
 import math
 from datetime import timedelta
 from argparse import ArgumentParser
@@ -68,7 +69,7 @@ def do_training(data_dir, data_val_dir, model_dir, device, image_size, input_siz
                 learning_rate, max_epoch, save_interval, checkpoint_path=None, validate=False):
 
 
-    current_time = time.strftime('%Y%m%d_%H%M')
+    current_time = datetime.now().strftime('%Y%m%d_%H%M')
     save_dir = osp.join(model_dir, current_time)
     
     set_seed()
