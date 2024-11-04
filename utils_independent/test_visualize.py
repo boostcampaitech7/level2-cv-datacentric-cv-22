@@ -85,6 +85,10 @@ def main():
     # 결과 저장 디렉토리 (CSV 파일 이름으로 생성)
     output_base_dir = os.path.join('../visualized_result', args.csv_name)
     
+    print(f'\nStarting visualization for {args.csv_name}')
+    print(f'Loading annotations from: {ufo_path}')
+    print(f'Results will be saved to: {output_base_dir}')
+    
     # UFO 포맷 데이터 로드
     annotations = load_ufo_format(ufo_path)
     
