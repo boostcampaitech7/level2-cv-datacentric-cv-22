@@ -24,7 +24,6 @@ from detect import get_bboxes
 from validate_bbox import ensure_bbox_format, extract_true_bboxes
 from deteval import calc_deteval_metrics
 
-
 def set_seed(seed=22):
     random.seed(seed)
     np.random.seed(seed)
@@ -33,7 +32,6 @@ def set_seed(seed=22):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-
 
 def parse_args():
     parser = ArgumentParser()
@@ -247,16 +245,19 @@ def do_training(data_dir, data_val_dir, model_dir, device, image_size, input_siz
             if not osp.exists(save_dir):
                 os.makedirs(save_dir)
 
-            ckpt_fpath = osp.join(save_dir, f'epoch_{epoch+1}.pth')
-            
-            torch.save({
-                #'epoch': epoch + 1,
-                'model_state_dict': model.state_dict(),
-                #'optimizer_state_dict': optimizer.state_dict(),
-                #'scheduler_state_dict': scheduler.state_dict(),
-                #'loss': avg_val_loss if validate else None,
-            }, ckpt_fpath)
-            
+            ckpt_fpath = osp.join(model_dir, f'epoch_{epoch+1}.pth')
+          
+            if validate:
+                torch.save({
+                    'epoch': epoch + 1,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'scheduler_state_dict': scheduler.state_dict(),
+                    'loss': avg_val_loss
+                }, ckpt_fpath)
+            else:   # validate가 False일 경우 model_state_dict만 저장
+                torch.save(model.state_dict(), ckpt_fpath)
+                
             print(f'Model checkpoint saved at {ckpt_fpath}')
 
 def main(args):
