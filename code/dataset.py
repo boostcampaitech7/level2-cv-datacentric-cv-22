@@ -1,3 +1,4 @@
+import os
 import os.path as osp
 import math
 import json
@@ -409,11 +410,23 @@ class SceneTextDataset(Dataset):
         funcs = []
         transform_list = []
         if self.split == 'train':
-            transform_list = [A.ColorJitter()]
+            transform_list = [
+                A.ColorJitter(),
+                A.InvertImg(),
+                ]
         funcs = transform_list + [A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))]
         transform = A.Compose(funcs)
 
         image = transform(image=image)['image']
+
+        visual_image = ((image * 0.5 + 0.5) * 255).astype(np.uint8)
+
+        save_dir = "augmented_images"
+        os.makedirs(save_dir, exist_ok=True)
+        save_path = os.path.join(save_dir, f"augmented_{image_fname}")
+
+        Image.fromarray(visual_image).save(save_path)
+        print(f"Augmented image saved at: {save_path}")
         word_bboxes = np.reshape(vertices, (-1, 4, 2))
         roi_mask = generate_roi_mask(image, vertices, labels)
 

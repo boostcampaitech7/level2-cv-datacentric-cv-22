@@ -38,7 +38,7 @@ def parse_args():
 
     # Conventional args
     parser.add_argument('--data_dir', type=str,
-                        default=os.environ.get('SM_CHANNEL_TRAIN', 'data')) # 전체 학습 데이터 경로 지정
+                        default=os.environ.get('SM_CHANNEL_TRAIN', 'data_fixed_bbox')) # 전체 학습 데이터 경로 지정
     parser.add_argument('--data_val_dir', type=str,
                         default=os.environ.get('SM_CHANNEL_VAL', 'data_val')) # 검증 데이터 경로 지정
     parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR',
@@ -51,7 +51,7 @@ def parse_args():
     parser.add_argument('--input_size', type=int, default=1024)
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--learning_rate', type=float, default=1e-3)
-    parser.add_argument('--max_epoch', type=int, default=100)
+    parser.add_argument('--max_epoch', type=int, default=85)
     parser.add_argument('--save_interval', type=int, default=5)
     parser.add_argument('--checkpoint_path', type=str, default=None, help="학습 재개 시 체크포인트 파일 경로 지정을 위한 인자")
     parser.add_argument('--validate', type=bool, default=False, help="Validation 실행 여부") # True/False 사용하여 검증 실행 여부 결정
@@ -74,7 +74,7 @@ def do_training(data_dir, data_val_dir, model_dir, device, image_size, input_siz
     set_seed()
 
     # wandb 초기화 ─────────────────────────────────────────────────────────────────────────────
-    wandb.init(project="Data-Centric", entity='jhs7027-naver', group = 'hyungjoon', name='hyungjoon',config={
+    wandb.init(project="Data-Centric", entity='jhs7027-naver', group = 'yejin', name=f'baseline_aug',config={
         "batch_size": batch_size,
         "max_epoch": max_epoch,
         "image_size": image_size,
