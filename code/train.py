@@ -2,10 +2,8 @@ import os
 import os.path as osp
 import time
 import math
-import wandb
 from datetime import timedelta
 from argparse import ArgumentParser
-import random
 
 import torch
 from torch import cuda
@@ -17,6 +15,9 @@ from east_dataset import EASTDataset
 from dataset import SceneTextDataset
 from model import EAST
 
+# 추가한 라이브러리
+import wandb
+import random
 import numpy as np
 import random
 from detect import get_bboxes
@@ -55,7 +56,7 @@ def parse_args():
     parser.add_argument('--max_epoch', type=int, default=100)
     parser.add_argument('--save_interval', type=int, default=5)
     parser.add_argument('--checkpoint_path', type=str, default=None, help="학습 재개 시 체크포인트 파일 경로 지정을 위한 인자")
-    parser.add_argument('--validate', type=bool, default=True, help="Validation 실행 여부") # True/False 사용하여 검증 실행 여부 결정
+    parser.add_argument('--validate', type=bool, default=False, help="Validation 실행 여부") # True/False 사용하여 검증 실행 여부 결정
     
     args = parser.parse_args()
 
@@ -66,8 +67,10 @@ def parse_args():
 
 
 def do_training(data_dir, data_val_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
-                learning_rate, max_epoch, save_interval, checkpoint_path=None, validate=False, seed=22):
+                learning_rate, max_epoch, save_interval, checkpoint_path=None, validate=False):
 
+    current_time = time.strftime('%Y%m%d_%H%M')
+    save_dir = osp.join(model_dir, current_time)
     
     set_seed()
 
@@ -244,14 +247,14 @@ def do_training(data_dir, data_val_dir, model_dir, device, image_size, input_siz
             if not osp.exists(save_dir):
                 os.makedirs(save_dir)
 
-            ckpt_fpath = osp.join(model_dir, f'epoch_{epoch+1}.pth')
+            ckpt_fpath = osp.join(save_dir, f'epoch_{epoch+1}.pth')
             
             torch.save({
-                'epoch': epoch + 1,
+                #'epoch': epoch + 1,
                 'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'scheduler_state_dict': scheduler.state_dict(),
-                'loss': avg_val_loss if validate else None,
+                #'optimizer_state_dict': optimizer.state_dict(),
+                #'scheduler_state_dict': scheduler.state_dict(),
+                #'loss': avg_val_loss if validate else None,
             }, ckpt_fpath)
             
             print(f'Model checkpoint saved at {ckpt_fpath}')
