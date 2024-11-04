@@ -245,7 +245,7 @@ def do_training(data_dir, data_val_dir, model_dir, device, image_size, input_siz
             if not osp.exists(save_dir):
                 os.makedirs(save_dir)
 
-            ckpt_fpath = osp.join(model_dir, f'epoch_{epoch+1}.pth')
+            ckpt_fpath = osp.join(save_dir, f'epoch_{epoch+1}.pth')
           
             if validate:
                 torch.save({
