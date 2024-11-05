@@ -22,7 +22,6 @@ def ufo_to_labelme(ufo_json_path, output_dir):
             points = word_data["points"]
             
             # transcription = null인 경우 처리
-            # 데이터 값을 보니 무엇인지 모르는 문자들은 null 처리함
             if transcription == None:
                 transcription = "unknown"
 
@@ -47,7 +46,7 @@ def ufo_to_labelme(ufo_json_path, output_dir):
 languages = ['chinese', 'japanese', 'thai', 'vietnamese']
 
 for language in languages:
-    ufo_file_path = '../../code/data_original/' + language + '_receipt/ufo/train.json'
-    output_dir = 'labelme_jsons/' + language + '_receipt'
+    ufo_file_path = f'code/data/{language}_receipt/ufo/train.json'
+    output_dir = f'labelme_jsons/{language}_receipt'
     os.makedirs(output_dir, exist_ok=True)
     ufo_to_labelme(ufo_file_path, output_dir)
