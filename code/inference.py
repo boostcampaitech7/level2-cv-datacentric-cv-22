@@ -20,13 +20,13 @@ def parse_args():
     parser = ArgumentParser()
 
     # Conventional args
-    parser.add_argument('--data_dir', default=os.environ.get('SM_CHANNEL_EVAL', 'data_fixed_bbox'))
+    parser.add_argument('--data_dir', default=os.environ.get('SM_CHANNEL_EVAL', 'data'))
     parser.add_argument('--model_dir', default=os.environ.get('SM_CHANNEL_MODEL', 'trained_models'))
     parser.add_argument('--output_dir', default=os.environ.get('SM_OUTPUT_DATA_DIR', 'predictions'))
 
-    # 체크포인트 폴더명과 에포크 번호를 입력받는 인자 추가
-    parser.add_argument('--checkpoint_folder', type=str, default='trained_models',
-                       help='Name of the checkpoint folder (e.g., 20240321_1430)')
+    # checkpoint_folder 인자 수정 - 날짜 폴더를 지정할 수 있도록
+    parser.add_argument('--checkpoint_folder', type=str, default=None,
+                       help='Name of the checkpoint subfolder (e.g., 20240321_1430). If None, uses model_dir directly.')
     parser.add_argument('--epoch_num', type=int, default=85,
                        help='Epoch number of the checkpoint to load')
     parser.add_argument('--output_name', type=str, default='output',
@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument('--device', default='cuda' if cuda.is_available() else 'cpu')
     parser.add_argument('--input_size', type=int, default=2048)
     parser.add_argument('--batch_size', type=int, default=5)
-
+                    
     args = parser.parse_args()
 
     if args.input_size % 32 != 0:
@@ -88,8 +88,13 @@ def do_inference(model, ckpt_fpath, data_dir, input_size, batch_size, split='tes
 def main(args):
 
     model = EAST(pretrained=False).to(args.device)
-    ckpt_fpath = osp.join(args.checkpoint_folder, f'epoch_{args.epoch_num}.pth')
-
+    
+    # checkpoint_folder가 지정된 경우와 아닌 경우를 구분
+    if args.checkpoint_folder:
+        ckpt_fpath = osp.join(args.model_dir, args.checkpoint_folder, f'epoch_{args.epoch_num}.pth')
+    else:
+        ckpt_fpath = osp.join(args.model_dir, f'epoch_{args.epoch_num}.pth')
+    
     if not osp.exists(ckpt_fpath):
         raise FileNotFoundError(f'Checkpoint not found at: {ckpt_fpath}')
     
@@ -114,7 +119,7 @@ def main(args):
         print('\nStarting visualization...')
         
         visualize_script = '../utils_independent/test_visualize.py'
-        subprocess.run(['python', visualize_script, '--csv_name', args.output_name])
+        subprocess.run(['python', visualize_script, '--csv_path', osp.join(args.output_dir, output_fname)])
 
 
 if __name__ == '__main__':
