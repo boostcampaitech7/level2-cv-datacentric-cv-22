@@ -9,7 +9,7 @@ def parse_args():
     """Command line arguments를 파싱합니다."""
     parser = argparse.ArgumentParser(description='Visualize test results with bounding boxes')
     parser.add_argument('--csv_path', type=str, required=True,
-                       help='Name of the CSV file (without .csv extension)')
+                       help='Path to the CSV file')
     return parser.parse_args()
 
 def load_ufo_format(file_path):
@@ -71,8 +71,13 @@ def draw_boxes(image_path, annotations, output_path):
 def main():
     # Parse command line arguments
     args = parse_args()
-    # UFO 포맷 파일 경로
-    ufo_path = f'../code/predictions/{args.csv_name}.csv'
+    
+    # CSV 파일 경로에서 파일 이름 추출 (확장자 제외)
+    csv_name = os.path.splitext(os.path.basename(args.csv_path))[0]
+    
+    if not os.path.exists(args.csv_path):
+        print(f"Error: CSV file not found at {args.csv_path}")
+        return
     
     # 테스트 이미지 디렉토리들
     test_dirs = {
@@ -83,14 +88,14 @@ def main():
     }
     
     # 결과 저장 디렉토리 (CSV 파일 이름으로 생성)
-    output_base_dir = os.path.join('../visualized_result', args.csv_name)
+    output_base_dir = os.path.join('../visualized_result', csv_name)
     
-    print(f'\nStarting visualization for {args.csv_name}')
-    print(f'Loading annotations from: {ufo_path}')
+    print(f'\nStarting visualization for {csv_name}')
+    print(f'Loading annotations from: {args.csv_path}')
     print(f'Results will be saved to: {output_base_dir}')
     
     # UFO 포맷 데이터 로드
-    annotations = load_ufo_format(ufo_path)
+    annotations = load_ufo_format(args.csv_path)
     
     # 언어별로 파일 분류
     language_files = organize_by_language(annotations)

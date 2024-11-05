@@ -39,7 +39,7 @@ def parse_args():
 
     # Conventional args
     parser.add_argument('--data_dir', type=str,
-                        default=os.environ.get('SM_CHANNEL_TRAIN', 'data_fixed_bbox')) # 전체 학습 데이터 경로 지정
+                        default=os.environ.get('SM_CHANNEL_TRAIN', 'data')) # 전체 학습 데이터 경로 지정
     parser.add_argument('--data_val_dir', type=str,
                         default=os.environ.get('SM_CHANNEL_VAL', 'data_val')) # 검증 데이터 경로 지정
     parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR',
@@ -69,7 +69,7 @@ def do_training(data_dir, data_val_dir, model_dir, device, image_size, input_siz
                 learning_rate, max_epoch, save_interval, checkpoint_path=None, validate=False):
 
 
-    current_time = datetime.now().strftime('%Y%m%d_%H%M')
+    current_time = time.strftime('%Y%m%d_%H%M')
     save_dir = osp.join(model_dir, current_time)
     
     set_seed()
