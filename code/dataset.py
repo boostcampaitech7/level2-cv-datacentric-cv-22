@@ -475,7 +475,8 @@ class SceneTextDataset(Dataset):
                 A.ColorJitter(),
                 A.InvertImg(),
                 ]
-        funcs = transform_list + [A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))]
+        #funcs = transform_list + [A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))]
+        funcs = transform_list + [A.Normalize(mean=(0.67817392, 0.65295607, 0.62366413), std=(0.19653008, 0.20776119, 0.21712693))] 
         transform = A.Compose(funcs)
 
         image = transform(image=image)['image']
