@@ -4,6 +4,7 @@ __pycache__/
 /code/loss.py
 /code/model.py
 /code/data
+/code/data_val
 /code/data_stratified
 /code/pths
 /code/trained_models
