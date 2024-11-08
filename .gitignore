@@ -10,3 +10,4 @@ __pycache__/
 /code/predictions
 /code/wandb
 /code/eda
+data_val/
