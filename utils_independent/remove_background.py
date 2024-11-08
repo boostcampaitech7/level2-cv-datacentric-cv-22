@@ -32,6 +32,7 @@ def process_recipt_images(input_folder, json_path, output_folder):
         if points:
             apply_background_mask(image_path, points, output_path)
 
+
 def main():
     root = 'code/data/'
     languages = ['chinese', 'japanese', 'thai', 'vietnamese']
@@ -44,4 +45,5 @@ def main():
         process_recipt_images(input_folder, json_path, output_folder)
     print("Background removal using bounding boxes completed.")
 
-main()
+if __name__ == '__main__':
+    main()
