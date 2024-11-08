@@ -97,61 +97,65 @@ validation_filenames = set([
     "extractor.vi.in_house.appen_000540_page0001.jpg",
     "extractor.vi.in_house.appen_000658_page0001.jpg"
 ])
+def main():
+    # ────────────────────────────────────────────────────────────────────────────────────────────────
 
-# ────────────────────────────────────────────────────────────────────────────────────────────────
+    # 데이터셋 경로 설정
+    data_dir = '../code/data'
+    languages = ['chinese_receipt', 'japanese_receipt', 'thai_receipt', 'vietnamese_receipt']
 
-# 데이터셋 경로 설정
-data_dir = '../code/data'
-languages = ['chinese_receipt', 'japanese_receipt', 'thai_receipt', 'vietnamese_receipt']
+    # ────────────────────────────────────────────────────────────────────────────────────────────────
 
-# ────────────────────────────────────────────────────────────────────────────────────────────────
-
-# JSON 파일 분리 및 이미지 이동
-for lang in languages:
-    json_path = os.path.join(data_dir, lang, 'ufo', 'train.json')
-    train_img_dir = os.path.join(data_dir, lang, 'img', 'train')
-    val_img_dir = os.path.join(data_dir, lang, 'img', 'validation')
-    
-    # validation 폴더 생성
-    os.makedirs(val_img_dir, exist_ok=True)
-    
-    # 새로운 train과 validation JSON 데이터 초기화
-    train_data = {"images": {}}
-    val_data = {"images": {}}
-    
-    # 기존 JSON 파일 읽기
-    with open(json_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-
-    # 데이터 분류 및 이미지 이동
-    for image_id, image_info in data['images'].items():
-        src_image_path = os.path.join(train_img_dir, image_id)
+    # JSON 파일 분리 및 이미지 이동
+    for lang in languages:
+        json_path = os.path.join(data_dir, lang, 'ufo', 'train.json')
+        train_img_dir = os.path.join(data_dir, lang, 'img', 'train')
+        val_img_dir = os.path.join(data_dir, lang, 'img', 'validation')
         
-        if image_id in validation_filenames:
-            # Validation 데이터로 분류
-            print(f"Validation으로 분류: {image_id}")
-            val_data['images'][image_id] = image_info
-            # 이미지를 validation 폴더로 이동
-            dst_image_path = os.path.join(val_img_dir, image_id)
-            if os.path.exists(src_image_path):
-                shutil.move(src_image_path, dst_image_path)
-                print(f"이미지 이동: {image_id}")
-        else:
-            # Train 데이터로 분류 (이미지는 현재 위치 유지)
-            train_data['images'][image_id] = image_info
+        # validation 폴더 생성
+        os.makedirs(val_img_dir, exist_ok=True)
+        
+        # 새로운 train과 validation JSON 데이터 초기화
+        train_data = {"images": {}}
+        val_data = {"images": {}}
+        
+        # 기존 JSON 파일 읽기
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
 
-    # JSON 파일 경로 설정
-    val_json_path = os.path.join(data_dir, lang, 'ufo', 'validation.json')
-    train_json_path = os.path.join(data_dir, lang, 'ufo', 'train.json')
+        # 데이터 분류 및 이미지 이동
+        for image_id, image_info in data['images'].items():
+            src_image_path = os.path.join(train_img_dir, image_id)
+            
+            if image_id in validation_filenames:
+                # Validation 데이터로 분류
+                print(f"Validation으로 분류: {image_id}")
+                val_data['images'][image_id] = image_info
+                # 이미지를 validation 폴더로 이동
+                dst_image_path = os.path.join(val_img_dir, image_id)
+                if os.path.exists(src_image_path):
+                    shutil.move(src_image_path, dst_image_path)
+                    print(f"이미지 이동: {image_id}")
+            else:
+                # Train 데이터로 분류 (이미지는 현재 위치 유지)
+                train_data['images'][image_id] = image_info
 
-    # 먼저 validation.json 생성
-    with open(val_json_path, 'w', encoding='utf-8') as f:
-        json.dump(val_data, f, indent=4, ensure_ascii=False)
-    print(f"validation.json 생성 완료: {val_json_path}")
+        # JSON 파일 경로 설정
+        val_json_path = os.path.join(data_dir, lang, 'ufo', 'validation.json')
+        train_json_path = os.path.join(data_dir, lang, 'ufo', 'train.json')
 
-    # 새로운 train.json 저장
-    with open(train_json_path, 'w', encoding='utf-8') as f:
-        json.dump(train_data, f, indent=4, ensure_ascii=False)
-    print(f"새로운 train.json 생성 완료: {train_json_path}")
+        # 먼저 validation.json 생성
+        with open(val_json_path, 'w', encoding='utf-8') as f:
+            json.dump(val_data, f, indent=4, ensure_ascii=False)
+        print(f"validation.json 생성 완료: {val_json_path}")
 
-print("데이터셋 분할 완료 (JSON 파일 분할 및 이미지 이동).")
+        # 새로운 train.json 저장
+        with open(train_json_path, 'w', encoding='utf-8') as f:
+            json.dump(train_data, f, indent=4, ensure_ascii=False)
+        print(f"새로운 train.json 생성 완료: {train_json_path}")
+
+    print("데이터셋 분할 완료 (JSON 파일 분할 및 이미지 이동).")
+
+
+if __name__ == '__main__':
+    main()
