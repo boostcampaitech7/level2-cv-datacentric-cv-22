@@ -11,6 +11,7 @@ import albumentations as A
 from torch.utils.data import Dataset
 from shapely.geometry import Polygon
 from numba import njit
+from skimage.util import random_noise
 
 
 @njit
@@ -335,6 +336,64 @@ def filter_vertices(vertices, labels, ignore_under=0, drop_under=0):
 
     return new_vertices, new_labels
 
+# 이미지 이진화 추가
+def binarize_image(image, threshold=255):
+    '''apply binary thresholding to enhance image contrast
+    Input:
+        image     : PIL Image
+        threshold  : threshold value for binarization
+    Output:
+        binarized image
+    '''
+    # 이미지를 그레이스케일로 변환
+    image = image.convert('L')
+    # 이진화 적용
+    binarized = image.point(lambda p: 255 if p > threshold else 0)
+    return binarized
+
+import cv2
+import numpy as np
+
+#구겨짐 및 왜곡 추가 (Random Distortion)
+def apply_distortion(image, strength=5):
+    h, w = image.shape
+    distortion = np.random.normal(0, strength, (h, w))
+    distorted = np.clip(image + distortion, 0, 1)
+    return distorted.astype(np.uint8)
+
+def random_inversion(image):
+    return 1 - image  # 0은 1로, 1은 0으로 변환
+
+
+
+def add_salt_and_pepper_noise(image, prob=0.08):
+    # 이미지가 PIL 객체인지 확인
+    if isinstance(image, Image.Image):
+        noisy = np.copy(np.array(image))  # PIL 이미지를 NumPy 배열로 변환하여 복사
+    else:
+        raise TypeError("Expected a PIL Image.")
+
+    # Add salt noise
+    num_salt = np.ceil(prob * noisy.size * 0.5)  # noisy.size는 총 픽셀 수
+    coords = [np.random.randint(0, i - 1, int(num_salt)) for i in noisy.shape]
+    noisy[coords] = 1
+
+    # Add pepper noise
+    num_pepper = np.ceil(prob * noisy.size * 0.5)
+    coords = [np.random.randint(0, i - 1, int(num_pepper)) for i in noisy.shape]
+    noisy[coords] = 0
+
+    return Image.fromarray(noisy)  # NumPy 배열을 PIL 이미지로 변환하여 반환
+
+
+def add_salt_and_pepper_noise(image, prob=0.08):
+    if np.random.random() < prob:
+        image = np.array(image)
+        noise_img = random_noise(image, mode='pepper', amount=0.08)
+        noise_img = np.array(255*noise_img, dtype = 'uint8')
+        return Image.fromarray(noise_img)
+    return image
+
 
 class SceneTextDataset(Dataset):
     def __init__(self, root_dir,
@@ -402,6 +461,7 @@ class SceneTextDataset(Dataset):
         image, vertices = adjust_height(image, vertices)
         image, vertices = rotate_img(image, vertices)
         image, vertices = crop_img(image, vertices, labels, self.crop_size)
+        image = add_salt_and_pepper_noise(image, 0.4)
 
         if image.mode != 'RGB':
             image = image.convert('RGB')
