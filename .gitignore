@@ -12,3 +12,5 @@ __pycache__/
 /code/eda
 /code/data_fixed_bbox
 augmented_images/
+visualized_result/
+labelme_jsons
