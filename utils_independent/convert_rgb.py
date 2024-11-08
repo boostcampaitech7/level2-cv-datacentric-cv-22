@@ -37,4 +37,5 @@ def main():
         convert_rgb(input_folder, output_folder)
     print("Convert image to RGB mode completed.")
 
-main()
+if __name__ == '__main__':
+    main()
