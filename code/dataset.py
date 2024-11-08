@@ -3,6 +3,7 @@ import os.path as osp
 import math
 import json
 from PIL import Image
+from PIL import ImageOps
 
 import torch
 import numpy as np
@@ -233,6 +234,45 @@ def crop_img(img, vertices, labels, length):
     new_vertices[:,[1,3,5,7]] -= start_h
     return region, new_vertices
 
+
+def resize_or_pad_img(img, vertices, target_length):
+    """
+    Pads the image to ensure both sides match the target_length without cropping.
+    The original aspect ratio is maintained, and padding is added as needed.
+    """
+    img = img.convert("RGB")
+
+    h, w = img.height, img.width
+    new_vertices = vertices.copy()
+
+    if h > w:
+        new_height = target_length
+        new_width = int(w * target_length / h)
+    else:
+        new_width = target_length
+        new_height = int(h * target_length / w)
+
+    img = img.resize((new_width, new_height), Image.BILINEAR)
+
+    # 리사이즈 비율에 따라 좌표 조정
+    ratio_w = new_width / w
+    ratio_h = new_height / h
+    new_vertices[:, [0, 2, 4, 6]] = vertices[:, [0, 2, 4, 6]] * ratio_w
+    new_vertices[:, [1, 3, 5, 7]] = vertices[:, [1, 3, 5, 7]] * ratio_h
+
+
+    delta_w = target_length - new_width
+    delta_h = target_length - new_height
+    padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
+    img = ImageOps.expand(img, padding, fill=(255, 255, 255))
+    
+    
+    new_vertices[:, [0, 2, 4, 6]] += padding[0]
+    new_vertices[:, [1, 3, 5, 7]] += padding[1]
+
+    return img, new_vertices
+
+
 @njit
 def rotate_all_pixels(rotate_mat, anchor_x, anchor_y, length):
     '''get rotated locations of all pixels for next stages
@@ -398,10 +438,12 @@ class SceneTextDataset(Dataset):
         )
 
         image = Image.open(image_fpath)
-        image, vertices = resize_img(image, vertices, self.image_size)       
+        image, vertices = resize_img(image, vertices, self.image_size)
         image, vertices = adjust_height(image, vertices)
         image, vertices = rotate_img(image, vertices)
         image, vertices = crop_img(image, vertices, labels, self.crop_size)
+        #image, vertices = resize_or_pad_img(image, vertices, self.crop_size)
+
 
         if image.mode != 'RGB':
             image = image.convert('RGB')
@@ -419,6 +461,7 @@ class SceneTextDataset(Dataset):
 
         image = transform(image=image)['image']
 
+        # ───────────────────────────── 데이터 증강 시각화 ─────────────────────────────
         visual_image = ((image * 0.5 + 0.5) * 255).astype(np.uint8)
 
         save_dir = "augmented_images"
@@ -426,7 +469,8 @@ class SceneTextDataset(Dataset):
         save_path = os.path.join(save_dir, f"augmented_{image_fname}")
 
         Image.fromarray(visual_image).save(save_path)
-        print(f"Augmented image saved at: {save_path}")
+        # ────────────────────────────────────────────────────────────────────────────
+        
         word_bboxes = np.reshape(vertices, (-1, 4, 2))
         roi_mask = generate_roi_mask(image, vertices, labels)
 
