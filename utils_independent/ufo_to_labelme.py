@@ -1,6 +1,7 @@
 import os
 import json
 
+
 def ufo_to_labelme(ufo_json_path, output_dir):
     with open(ufo_json_path, 'r', encoding='utf-8') as f:
         ufo_data = json.load(f)
