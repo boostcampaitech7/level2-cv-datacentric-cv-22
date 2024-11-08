@@ -26,6 +26,7 @@ def convert_rgb(input_folder, output_folder):
 
         rgb_img.save(output_path)
 
+
 def main():
     root = 'code/data/'
     languages = ['chinese', 'japanese', 'thai', 'vietnamese']
