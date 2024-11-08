@@ -3,6 +3,7 @@ import os.path as osp
 import math
 import json
 from PIL import Image
+from skimage.util import random_noise
 
 import torch
 import numpy as np
@@ -11,7 +12,7 @@ import albumentations as A
 from torch.utils.data import Dataset
 from shapely.geometry import Polygon
 from numba import njit
-from skimage.util import random_noise
+
 
 
 @njit
