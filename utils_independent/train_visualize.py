@@ -42,14 +42,15 @@ def draw_boxes_on_image(json_path, img_dir, output_dir):
         output_path = os.path.join(output_dir, img_name)
         cv2.imwrite(output_path, img)
 
-# 처리할 국가 리스트
-countries = ['chinese', 'japanese', 'thai', 'vietnamese']
+if __name__ == "__main__":
+    # 처리할 국가 리스트
+    countries = ['chinese', 'japanese', 'thai', 'vietnamese']
 
-# 각 국가별 데이터 처리
-for country in countries:
-    json_path = f'code/data/{country}_receipt/ufo/train.json'
-    img_dir = f'code/data/{country}_receipt/img/train'
-    output_dir = f'new_data/{country}_receipt/train'
-    
-    print(f"\nProcessing {country} receipts...")
-    draw_boxes_on_image(json_path, img_dir, output_dir)
+    # 각 국가별 데이터 처리
+    for country in countries:
+        json_path = f'code/data/{country}_receipt/ufo/train.json'
+        img_dir = f'code/data/{country}_receipt/img/train'
+        output_dir = f'new_data/{country}_receipt/train'
+        
+        print(f"\nProcessing {country} receipts...")
+        draw_boxes_on_image(json_path, img_dir, output_dir)
