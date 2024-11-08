@@ -26,6 +26,7 @@ def convert_rgb(input_folder, output_folder):
 
         rgb_img.save(output_path)
 
+
 def main():
     root = 'code/data/'
     languages = ['chinese', 'japanese', 'thai', 'vietnamese']
@@ -37,4 +38,5 @@ def main():
         convert_rgb(input_folder, output_folder)
     print("Convert image to RGB mode completed.")
 
-main()
+if __name__ == '__main__':
+    main()
