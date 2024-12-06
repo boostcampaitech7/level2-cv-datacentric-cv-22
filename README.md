@@ -82,39 +82,12 @@
 ### 실험 결과
 
 - 일반 실험 이미지
-    
-    
-    |  | Precision | Recall | F1 Score |
-    | --- | --- | --- | --- |
-    | Baseline | 0.7681 | 0.7873 | 0.7776 |
-    | Relabeling 1차 | 0.7217 | 0.8272 | 0.7709 |
-    | Relabeling 2차 | 0.8257 | 0.8185 | **0.8220** |
-    | Relabeling 3차 | 0.7730 | 0.7825 | 0.7569 |
-    | Background Removal | 0.5011 | 0.5118 | 0.5064 |
-    | Normalization | 0.7479 | 0.8490 | 0.7952 |
-    | Salt & Pepper | 0.7958 | 0.7859 | 0.7908 |
+  
+![image](https://github.com/user-attachments/assets/ff76d408-ae01-4502-83f2-d1897bf6f758)
+
 - 앙상블 실험 결과 (최종 성능 결과) 이미지
-    
-    
-    | CORD 사전 학습 | Model | Dataset | 전처리 및 증강 | Epoch | Precision | Recall | F1 score |
-    | --- | --- | --- | --- | --- | --- | --- | --- |
-    | X | base_model (seed=10) | 기본 데이터셋 | X | 85 | 0.7819 | 0.8156 | 0.7984 |
-    | X | base_model (seed=22) | CORD | X | 115 | 0.8510 | 0.8026 | 0.8261 |
-    | X | base_model (seed=22) | 1차 조정 데이터셋 | X | 85 | 0.8257 | 0.8185 | 0.8220 |
-    | normalize | base_model (seed=22) | 기본 데이터셋 | normalize,
-    salt&pepper | 30 | 0.8216 | 0.8368 | 0.8291 |
-    | normalize | base_model (seed=22) | 기본 데이터셋 | normalize,
-    salt&pepper | 40 | 0.7704 | 0.8661 | 0.8154 |
-    | normalize,
-    선 라벨링 추가 | base_model (seed=22) | 기본 데이터셋 | normalize,
-    salt&pepper | 30 | 0.8012 | 0.8686 | 0.8336 |
-    | normalize,
-    선 라벨링 추가 | base_model (seed=22) | 2차 조정 데이터셋 | normalize,
-    salt&pepper | 30 | 0.7977 | 0.8509 | 0.8234 |
-    | normalize,
-    선 라벨링 추가 | base_model (seed=42) | 1차 조정 데이터셋 | normalize,
-    salt&pepper | 30 | 리더보드 제출 X | 리더보드 제출 X | 리더보드 제출 X |
-    | 앙상블  | IoU(0.6) vote3  |  |  |  | **0.9031** | **0.8710** | **0.8868** |
+  
+![image](https://github.com/user-attachments/assets/bb318ace-0c7e-4227-82f9-43f97f59c931)
 
 ### Feedback
 
