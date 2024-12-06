@@ -91,11 +91,12 @@
 
 ### Feedback
 
-- 평가 데이터셋 찾기 어려움
+- Test 데이터셋 성능과 유사한 Validation 데이터셋 성능을 찾기 어려웠음.
+- 모델 중심이 아닌 데이터 중심의 실험을 통하여 데이터 전처리 및 가공의 중요성을 깨닫게 된 프로젝트였음.
 
 ## 5. Report
 
-- [**Wrap-up Report](https://www.notion.so/Data-Centric-13714f1bea6d809fb249cf6dfc2e7fe7?pvs=21)**
+- [Wrap-up Report](https://www.notion.so/Data-Centric-13714f1bea6d809fb249cf6dfc2e7fe7?pvs=21)
 
 ## 6. How to Run
 
