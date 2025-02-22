@@ -1,0 +1,17 @@
+__pycache__/
+/code/detect.py
+/code/east_dataset.py
+/code/loss.py
+/code/model.py
+/code/data
+/code/data_val
+/code/data_stratified
+/code/pths
+/code/trained_models
+/code/predictions
+/code/wandb
+/code/eda
+/code/data_fixed_bbox
+augmented_images/
+visualized_result/
+labelme_jsons
